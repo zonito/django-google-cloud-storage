@@ -59,7 +59,7 @@ class GoogleCloudStorage(Storage):
         except http.HttpError as http_error:
             print("[Error in objects access for GCS]: error: %s", http_error)
         else:
-            return name
+            return self.base_url + '/' + name
 
     def delete(self, name):
         try:
