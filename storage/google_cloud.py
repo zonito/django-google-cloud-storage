@@ -54,8 +54,8 @@ class GoogleCloudStorage(Storage):
                 bucket=self.bucket,
                 name=name,
                 predefinedAcl='publicRead',
-                media_body=media).execute()
-            print response
+                media_body=media)
+            response.execute()
         except http.HttpError as http_error:
             print("[Error in objects access for GCS]: error: %s", http_error)
         else:
