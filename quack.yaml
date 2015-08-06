@@ -6,7 +6,15 @@ modules:
     repository: https://github.com/GoogleCloudPlatform/appengine-gcs-client.git
     path: python/src/cloudstorage
     hexsha: ddb38d680899f49dfe23b9b00ca0dd5a4bf1d7b0
+  oauth2client:
+    repository: https://github.com/google/oauth2client.git
+    path: oauth2client
+  apiclient:
+    repository: https://github.com/google/google-api-python-client.git
+    path: googleapiclient
 
 profiles:
   init:
     tasks: ['modules']
+  update:
+    tasks: ['modules:apiclient']

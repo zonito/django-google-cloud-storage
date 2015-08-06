@@ -1,2 +1,5 @@
-
+*.json
 cloudstorage
+
+oauth2client
+googleapiclient
