@@ -1,6 +1,5 @@
 """Google cloud communication bridge."""
 
-import cloudstorage
 import httplib2
 import json
 import mimetypes
@@ -11,7 +10,6 @@ from googleapiclient.discovery import build
 from django.conf import settings
 from oauth2client.client import SignedJwtAssertionCredentials
 
-from django.core.files.base import ContentFile
 from django.core.files.storage import Storage
 from google.appengine.api.blobstore import create_gs_key
 
@@ -45,42 +43,29 @@ class GoogleCloudStorage(Storage):
         file_pointer.close()
         return private_info
 
-    def _open(self, name):
-        """Return given name content."""
-        filename = self.bucket + "/" + name
-        gcs_file = cloudstorage.open(filename, mode='r')
-        content = ContentFile(gcs_file.read())
-        gcs_file.close()
-        return content
-
     def _save(self, name, content):
         """Save to google storage"""
-        filename = self.bucket + "/" + name
-        filename = os.path.normpath(filename)
         mime_type, _ = mimetypes.guess_type(name)
-        # files are stored with public-read permissions. Check out the google
-        # acl options if you need to alter this.
-        gss_file = cloudstorage.open(
-            filename,
-            mode='w',
-            content_type=mime_type,
-            options={
-                'x-goog-acl': 'public-read',
-                'cache-control': (
-                    settings.GOOGLE_CLOUD_STORAGE_DEFAULT_CACHE_CONTROL)
-            }
-        )
         content.open()
-        gss_file.write(content.read())
+        media = http.MediaIoBaseUpload(content, mime_type)
         content.close()
-        gss_file.close()
-        return name
+        try:
+            response = self.service.objects().insert(
+                bucket=self.bucket,
+                name=name,
+                predefinedAcl='publicRead',
+                media_body=media).execute()
+            print response
+        except http.HttpError as http_error:
+            print("[Error in objects access for GCS]: error: %s", http_error)
+        else:
+            return name
 
     def delete(self, name):
-        filename = self.bucket + "/" + name
         try:
-            cloudstorage.delete(filename)
-        except cloudstorage.NotFoundError:
+            self.service.objects().delete(
+                bucket=self.bucket, object=name).execute()
+        except http.HttpError:
             pass
 
     def exists(self, name):
@@ -89,40 +74,6 @@ class GoogleCloudStorage(Storage):
             return True
         except http.HttpError:
             return False
-
-    def listdir(self, path=None):
-        directories, files = [], []
-        bucket_contents = cloudstorage.listbucket(self.bucket, prefix=path)
-        for entry in bucket_contents:
-            file_path = entry.filename
-            head, tail = os.path.split(file_path)
-            sub_path = os.path.join(self.bucket, path)
-            head = head.replace(sub_path, '', 1)
-            if head == "":
-                head = None
-            if not head and tail:
-                files.append(tail)
-            if head:
-                if not head.startswith("/"):
-                    head = "/" + head
-                directory = head.split("/")[1]
-                if not directory in directories:
-                    directories.append(directory)
-        return directories, files
-
-    def size(self, name):
-        stats = self.stat_file(name)
-        return stats.st_size
-
-    def accessed_time(self, name):
-        raise NotImplementedError
-
-    def created_time(self, name):
-        stats = self.stat_file(name)
-        return stats.st_ctime
-
-    def modified_time(self, name):
-        return self.created_time(name)
 
     def url(self, name):
         if settings.DEBUG:
@@ -135,6 +86,10 @@ class GoogleCloudStorage(Storage):
                 "?display=inline"
             )
         return self.base_url + "/" + name
+
+    def size(self, name):
+        stats = self.stat_file(name)
+        return stats.get('size')
 
     def stat_file(self, name):
         """Return file status."""
