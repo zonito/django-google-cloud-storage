@@ -9,7 +9,10 @@ from google.appengine.api.blobstore import create_gs_key
 import cloudstorage as gcs
 
 
+# pylint: disable=R0921
 class GoogleCloudStorage(Storage):
+
+    """Class to handle django filefield."""
 
     def __init__(self, location=None, base_url=None):
         if location is None:
@@ -40,7 +43,8 @@ class GoogleCloudStorage(Storage):
             content_type=mime_type,
             options={
                 'x-goog-acl': 'public-read',
-                'cache-control': settings.GOOGLE_CLOUD_STORAGE_DEFAULT_CACHE_CONTROL
+                'cache-control': (
+                    settings.GOOGLE_CLOUD_STORAGE_DEFAULT_CACHE_CONTROL)
             }
         )
         content.open()
@@ -103,7 +107,10 @@ class GoogleCloudStorage(Storage):
             # the local appengine server
             filename = "/gs" + self.location + "/" + name
             key = create_gs_key(filename)
-            return "http://localhost:8000/blobstore/blob/" + key + "?display=inline"
+            return (
+                "http://localhost:8000/blobstore/blob/" + key +
+                "?display=inline"
+            )
         return self.base_url + "/" + name
 
     def stat_file(self, name):
