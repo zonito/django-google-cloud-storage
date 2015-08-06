@@ -36,4 +36,4 @@ On your django settings.py file you need to add the following settings
 
 And finally declare the file storage backend you will use on your settings.py file
 
-    DEFAULT_FILE_STORAGE = 'google.storage.googleCloud.GoogleCloudStorage'
+    DEFAULT_FILE_STORAGE = 'google.storage.google_cloud.GoogleCloudStorage'
